@@ -1,0 +1,81 @@
+秒杀接口如何实现
+{
+一秒钟出现1万次或者说上亿次的订单
+
+//1.参数验证
+
+//2. 用户频率限制
+//3.修改数据库对应的库存[减少库存]
+------->异步 Mq实现[异步请求和流量削封]
+//4.添加秒杀成功订单
+
+
+}			
+		
+
+		{
+			
+			
+			public interface spikeCommodityService{
+			BaseRespence<JsonObject> spike（String phone,Long seckIId）
+			
+			
+			}
+			
+			}
+{保证唯一}当用户点击立即下单 会传用户信息 1.手机号码(或者UserId) 2.秒杀库存商品Id
+		   因为你要对用户做一个频率限制 不可能一个用户每秒钟都会访问我接口
+=====================================================================================================================》
+		     //3.修改数据库对应的库存
+			update table set x=x-1 where id=101 //  但是此时不能防止超卖
+			 呢么如何防止超卖{ 很简单的版本}
+update table set x=x-1 where id=101  and  x>0
+2.> 此时库存都剩下1  2个线程同时进入  同时执行sql  这个时候 会不会 
+此时模拟1000个请求来抢着一个商品  不会出现超卖的现象  因为在Mysql当中 每次在做更新数据库的时候
+有行锁的机制   所以不存在超卖的问题
+		partTwo
+			select meite_seckill  from table set inventory= inventory-1 where seckill_id='10001'
+------------------------------------------------------------------------------->基于版本号形式实现数据库乐观锁
+加个cas无锁    谁块就可以修改成功
+// 加一个版本号  乐观锁机制 
+	select version from table where seckill_id="10001"
+	update meite_seckill set inventory= inventory-1,version=version+1 from table  where seckill_id='10001',and version="1"
+			
+			
+==============================================================================================================================》
+select version from table where seckill_id="10001"
+update meite_seckill set inventory= inventory-1,version=version+1 from table  where seckill_id='10001',and version="1"
+加个版本号 谁快就能修改成功
+
+@Update("update meite_seckill set inventory= inventory-1,version=version+1 from table  where seckill_id=#{seckill_id},and version=#{version} and inventory>0)
+int inventoryDeduction(long seckIId ,long version)
+==========================================================================================================================================
+
+
+第一 使用数据库自带的行锁机制进行实现  是悲观
+{
+1.200个请求 100个请求成功
+}
+第二 是乐观锁控制  使用version  // 先加个版本号
+{
+1.查版本号 2 版本号对应就OK   //可以少卖
+}
+//--------->场景2 的效率比场景1 好点  抢购失败   
+ 加个版本号 防止一下子全被抢购成功{控制}  还有分时段限流抢购  比如说 12：00-1:00  
+ 进行分段抢购比较好
+ ---------------------------------------------------------------------------------------->防止超卖问题 
+ 在做秒杀接口的时候  实现用户频率的问题
+基于redis实现用户行为实现频率限制
+ setnx() 
+ //如果Key存在 返回false  不存在返回true 
+Boolern selfAbsert= StringRedisTemplate.opForValue().setIfAbsert(key,value,101)// 过期时间
+
+Boolern resultNX=redisUtil.setNx(phone,sellke);  //  如果
+if(!resultNX){
+sout("重试10s之后")
+} 
+
+更改数据库对应的库存   1W个
+提前生成好100个token  谁能够抢购成功token 再扔给Mq实现异步 修改库存  提前申请一个库存桶
+ ------------------------------------------------------------------------------------------------------------------------>
+ 

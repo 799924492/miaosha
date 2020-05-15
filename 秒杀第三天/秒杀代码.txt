@@ -1,0 +1,31 @@
+//--------------------->秒杀接口的实现
+1.验证参数
+
+2.从redis当中获取对应的token
+3.获取到秒杀token， 异步放入到mq中实现修改商品的库存
+
+ String ListKeyToken=generationToken.getListkeyToken(seckilldId);
+ if(ListKeyToken==null){
+ log.info(ListKeyToken+">>>ListKeyToken+添加成功")//  主键区分
+ sout	该商品已经售空 
+ }
+ //-[生产者角色]------->异步形式修改商品库存  使用rabbit使用mq
+ 
+ 
+ return setResponse("wait“)
+ 
+ ---------------------------------------------------------------------------------->
+ ---------------------------------------------------------------------------------->
+ 粒度划分的更细点 秒杀消费者一定要单独启一个服务
+ token的目的是否可以秒杀成功或者秒杀失败
+ 使用多线程的情况可以更快的相应客户端
+  ---------------------------------------------------------------------------------->
+  使用mq异步实现扣库存 执行修改库存sql语句 消费者
+  
+  
+  String msg=new String (message.getBody(),"utf-8");
+  JsonObject jsobObject=JsonObject.parseObject(msg)
+  // 获取到秒杀的商品id
+  Long data=jsonobject.getLong("sellKilled")
+  //2. 根据id获取到版本号
+  //------->然后通过cas 修改库存 修改库存失败   秒杀失败

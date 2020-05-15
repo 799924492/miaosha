@@ -1,0 +1,5 @@
+				//  商品Id     用户信息    状态		创建时间
+1.meite_order    seckil_id   userPhone		state   time
+
+		//  商品库存Id        商品名称   库存量
+2.meite_seckill  seckil_id   name		invent
