@@ -1,0 +1,209 @@
+//---->初始值 stock 在  redis当中50件  
+秒杀减库存  超卖
+
+@RestController
+public class IndexController{
+     @Autowaired
+     private Redisson redisson;
+     @Autowaired
+     private StringRedisTemplate stringRedisTemplate;
+     @RequestMapping ("/deduct_stock")
+	 
+    public string deductStock()throws Exception{
+    int stock=Integet.parseInt(stringRedisTemplate.opsForValue().get("stock"))
+    
+	if(stock>0){
+    int realStock=stock-1;
+    stringRedisTemplate.opsForValue().set("stock",realStock+"")  // 重新设置到redis当中
+   sout	--->扣减库存成功
+   }else{
+   sout	--->扣减库存失败
+   }
+   return "end"
+}
+
+
+}
+
+//---------------------------------------------------------->此时代码如果说不是原子性  此时我们可以加个sy
+
+sy(this){
+
+ int stock=Integet.parseInt(stringRedisTemplate.opsForValue().get("stock"))
+    
+	if(stock>0){
+    int realStock=stock-1;
+    stringRedisTemplate.opsForValue().set("stock",realStock+"")  // 重新设置到redis当中
+   sout	--->扣减库存成功
+   }else{
+   sout	--->扣减库存失败
+   }
+-------------------------------------------------------------->此时代码如果说不是原子性  此时我们可以加个sy
+ 前端做nginx 负载均衡 负载均衡到2个web应用    也就是说2个进程
+ sy是jvm进程级别的锁  多个tomcat应用，每个tomcat应用都是一个jvm进程  sy只能在jvm内部生效
+ 此时我有多个tomcat应用 每个tomcat应用都是一个jvm进程
+ 
+ 假设有2个请求过来同时 被nginx分发到不同的nginx上面去 ，去执行sy代码块   此时对于集群来说就会有并发问题
+ 因为会出现同时  
+ //-------->springboot 部署tomcat
+ 
+
+
+}
+---------------------------------------------------------------------------------------------------------------------------->@RestController
+public class IndexController{
+     @Autowaired
+     private Redisson redisson;
+     @Autowaired
+     private StringRedisTemplate stringRedisTemplate;
+     @RequestMapping ("/deduct_stock")
+	 
+    public string deductStock()throws Exception{
+	Boolern result=	stringRedisTemplate.opsForValue.setifAbsert("lockKey","zhuge");// 分布式锁jedis.setNx(key,value) //true 代表执行成功  也就是redis 中没有这个key
+    // 如果  false  代表执行失败 代表 此时redis中已经有key，他不会做任何操作
+	if(!result){
+	return "error";
+	}
+		
+	int stock=Integet.parseInt(stringRedisTemplate.opsForValue().get("stock"))
+    
+	if(stock>0){
+    int realStock=stock-1;
+    stringRedisTemplate.opsForValue().set("stock",realStock+"")  // 重新设置到redis当中
+   sout	--->扣减库存成功
+   }else{
+   sout	--->扣减库存失败
+   }
+   stringRedisTemplate.delect(lockKey) //------->删除锁 释放锁  释放锁
+   return "end"
+}
+
+}
+//-------->有多个请求同时执行  分布式锁 ，redis的线程模型是单线程
+有多个请求到nginx  再分发到不同的tomcat 这些请求最终会到redis中  执行jedis.setNx// 命令
+不管有多少个请求 即使同一你秒 到达redis  redis 也会给你做排队   第一个成功意味着后面全部为不成功
+只有一个线程执行执行成功  对同一个资源枷锁 锁定的问题 key可以用作商品id ，也就是说只有一个请求可以执行后续的代码
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------>
+拿到锁的线程 抛异常 不释放锁  就会造成死锁
+ 
+Boolern result=	stringRedisTemplate.opsForValue.setifAbsert("lockKey","zhuge");// 分布式锁jedis.setNx(key,value) //true 代表执行成功  也就是redis 中没有这个key
+stringRedisTemplate.expire("lockKey",10,TimeUtil.Second)//  对 lockKey 设置个超时时间；//  10s后自动删除
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------》
+2行代码不能保证原子性此时是非原子性
+Boolern result=	stringRedisTemplate.opsForValue.setifAbsert("lockKey","zhuge",10,TimeUtil.Second);  //   redis 帮助我们保证原子操作
+------------------------------------------------------------------------------------------------------------------------------------------------》
+1.在高并发情况下会有什么问题  可能这个请求业务还没结束[可能就执行一半时间]，锁就过期了  time=10 这个时间不好把握
+2. 当前线程吧别的线程的锁给解掉了，很可能我线程刚加的锁 马上就被其他线程给释放掉了
+3. 锁会失效//   最根本的原因是我线程加的锁被别的线程给释放了
+------------------------------------------------------------------------------------------------------------------------------------------------------------------》public class IndexController{
+part3
+  
+  @Autowaired
+     private Redisson redisson;
+     @Autowaired
+     private StringRedisTemplate stringRedisTemplate;
+     @RequestMapping ("/deduct_stock")
+	 
+    public string deductStock()throws Exception{
+ String clientId=UUID.random().toString 
+    try {
+Boolern result=	stringRedisTemplate.opsForValue.setifAbsert("lockKey",clientId,10,TimeUtil.Second);  //   redis 帮助我们保证原子操作{此时我给key设置个唯一标识}
+    // 如果  false  代表执行失败 代表 此时redis中已经有key，他不会做任何操作
+	if(!result){
+	return "error";
+	}
+		
+	int stock=Integet.parseInt(stringRedisTemplate.opsForValue().get("stock"))
+    
+	if(stock>0){
+    int realStock=stock-1;
+    stringRedisTemplate.opsForValue().set("stock",realStock+"")  // 重新设置到redis当中
+   sout	--->扣减库存成功
+   }else{
+   sout	--->扣减库存失败
+   }
+  } finally {
+  if(clientId.equals(stringRedisTemplate.opsForValue.get(lockKey)){  //------>判断唯一值是否一致  一致就会去释放锁  解决高并发情况下锁失效问题
+   stringRedisTemplate.delect(lockKey) //------->删除锁 释放锁  释放锁 
+  }
+  
+    }
+   return "end"
+}
+
+}
+//---------------->
+分布式锁的目的吧并发的问题变成了串行  但是串行的话性能有问题
+//-------------------------------------------------------------------------------->
+线程拿到锁的
+有一个线程拿到这把锁  开启一个分线程{ 高并发情况下只有一个线程获取到锁 说白了只有一个定时器
+开启一个定时器  定时器每隔一段时间 检查这个线程加的这把锁是否还存在 如果还存在  吧这个时间延时  超时时间的1/3； //时间间隔，
+}
+分布式的概念就是在同一个集群下只有一个线程来执行
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+redission 框架  也是一个rredis客户端
+
+//------------------------------------------------------------------------------------------------------------------》
+1.引入jar
+	    <dependency>
+            <groupId>org.redission</groupId>
+            <artifactId>redission</artifactId>
+            <optional>3.6.5</optional>
+        </dependency>
+2.初始化
+			@Bean	
+				public Redission redission(){
+				COnfig config=	new COnfig()
+				config.useSingleServir().setAddress("redis连接地址").setDatabase(0)
+				return Redission.creat(config);
+				}
+		
+3.  RLock redissionLock= redission.getLock(lockKey) // 枷锁
+	redissionLock.lock(30)  //  设置超时时间
+--------------------------------------------------------------------------------------------------------------------------------	
+	
+	
+	@Autowaired
+     private Redisson redisson;
+     @Autowaired
+     private StringRedisTemplate stringRedisTemplate;
+     @RequestMapping ("/deduct_stock")
+	 
+    public string deductStock()throws Exception{
+ String clientId=UUID.random().toString 
+     RLock redissionLock= redission.getLock(lockKey) // 获得锁对象
+    try {
+ 
+	  redissionLock.lock(30)  //  在redis中加一把锁  并且设置超时时间30s[拿到锁的正常执行，没有拿到锁的阻塞] 还有api让他不阻塞直接返回
+	
+		
+	int stock=Integet.parseInt(stringRedisTemplate.opsForValue().get("stock"))
+    
+	if(stock>0){
+    int realStock=stock-1;
+    stringRedisTemplate.opsForValue().set("stock",realStock+"")  // 重新设置到redis当中
+   sout	--->扣减库存成功
+   }else{
+   sout	--->扣减库存失败
+   }
+  } finally {
+redissionLock.unluck()//----->释放锁
+  }
+  
+    }
+   return "end"
+}
+------------------------------------------------------------------------------------------------》
+多个线程 线程1和线程2都通过redission 给加锁  
+			线程2 不能枷锁就会自旋
+		 线程1加锁成功 后台会开启一个分线程[定时器]  对我们的锁续命
+----------------------------------------------------------------------------------------------》
+redis主从架构 master sleve  // 或者是redis 主从复制
+意味着  这个锁在主节点设置成功后 会 ------>同步到从结点[主节点挂了]
+---------------------------------------------------------------------------------------------->
+比方说商品库存 001 的库存 100 个 我要秒杀
+可以吧这个库存在redis当中做分段存储
+  然后减库存的话我就可以分段去减  高并发锁定不同的key 虽然是同一个请求 类似于currentHashMap [支撑并发 加锁机制 分段锁机制  性能好] p_001_1  
+ 瞬间并发性能就能提高10倍
+ -------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+ redis主从切换导致锁失效【可以】               使用zk来使用做 保证绝对不出任何问题

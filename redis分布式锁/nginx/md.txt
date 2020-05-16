@@ -1,0 +1,2 @@
+ngixn --->反向代理到 192.xxx.xxx.xxx  localhost:8080
+                     192.xxx.xxx.xxx  localhost:8090
