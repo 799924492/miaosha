@@ -1,0 +1,25 @@
+public class IndexController {
+    public string deductStock()throws Exception{
+ String clientId=UUID.random().toString 
+     RLock redissionLock= redission.getLock(lockKey) // 获得锁对象
+    try {
+ 
+	  redissionLock.lock(30)  //  在redis中加一把锁  并且设置超时时间30s[拿到锁的正常执行，没有拿到锁的阻塞] 还有api让他不阻塞直接返回
+	
+		
+	int stock=Integet.parseInt(stringRedisTemplate.opsForValue().get("stock"))
+    
+	if(stock>0){
+    int realStock=stock-1;
+    stringRedisTemplate.opsForValue().set("stock",realStock+"")  // 重新设置到redis当中
+   sout	--->扣减库存成功
+   }else{
+   sout	--->扣减库存失败
+   }
+  } finally {
+redissionLock.unluck()//----->释放锁
+  }
+  
+    }
+   return "end"
+}

@@ -1,0 +1,21 @@
+分布式事务
+		事务是acid 是很正常的 因为你只在一个数据库中
+微服务时代是一个服务一个数据库
+		在2个不同的进程为何保证强一致性
+		和钱有关的一定保证强一致性，可以不保证可用性
+		
+seata AT		强一致性 acid
+seata saga	    弱一致性[柔性事务]  基于base理论实现最终一致性
+s eata 支持at,tcc,saga和xa[2阶段提交实现强一致性]事务模式，
+		 
+		 
+		 
+		 TC 事务协调者 seata Service  只要把我们的服务注册上去
+		 RM ----->就是我们的服务[事务参与者]
+		TM事务管理者[事务发起者] 要有一个人来全局管理  seata提供一个xID 的东西 全局事务Id
+		
+		provider-order-api // 事务参与者
+		provider-order-item-api  // 事务参与者
+		provider-transaction-api // 事务发起者
+
+		<scope></scope>
